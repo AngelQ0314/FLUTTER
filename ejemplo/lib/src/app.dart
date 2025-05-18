@@ -1,174 +1,185 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
-class App_Login extends StatefulWidget {
-  const App_Login({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
-  State<App_Login> createState() => _App_LoginState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Formulario Usuario',
+      home: const FormularioPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
 }
 
-class _App_LoginState extends State<App_Login> {
-  // Controladores para campos de texto
-  final TextEditingController ciController = TextEditingController();
-  final TextEditingController nombreController = TextEditingController();
-  final TextEditingController apellidoController = TextEditingController();
-  final TextEditingController edadController = TextEditingController();
+class FormularioPage extends StatefulWidget {
+  const FormularioPage({super.key});
 
-  // Género (Radio buttons)
-  String genero = 'Masculino';
+  @override
+  State<FormularioPage> createState() => _FormularioPageState();
+}
 
-  // Estado civil (Checkboxes)
-  bool esSoltero = false;
-  bool esCasado = false;
+class _FormularioPageState extends State<FormularioPage> {
+  final _formKey = GlobalKey<FormState>();
 
-  // Funciones básicas para botones
-  void agregar() {
-    // Aquí puedes agregar lógica para insertar los datos
-    print('Agregar: ${ciController.text}, ${nombreController.text}');
+  final TextEditingController _cedulaController = TextEditingController();
+  final TextEditingController _nombresController = TextEditingController();
+  final TextEditingController _apellidosController = TextEditingController();
+  final TextEditingController _edadController = TextEditingController();
+  final TextEditingController _fechaNacimientoController = TextEditingController();
+
+  String? _genero;
+  Map<String, bool> estadoCivil = {
+    'Soltero/a': false,
+    'Casado/a': false,
+    'Divorciado/a': false,
+    'Viudo/a': false,
+  };
+
+  Future<void> _seleccionarFecha(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      _fechaNacimientoController.text = DateFormat('yyyy-MM-dd').format(picked);
+    }
   }
 
-  void eliminar() {
-    // Limpia todos los campos
-    ciController.clear();
-    nombreController.clear();
-    apellidoController.clear();
-    edadController.clear();
-    setState(() {
-      genero = 'Masculino';
-      esSoltero = false;
-      esCasado = false;
-    });
+  void _validarYEnviar() {
+    if (_formKey.currentState!.validate()) {
+      if (_genero == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Seleccione un género")),
+        );
+        return;
+      }
+
+      if (!estadoCivil.containsValue(true)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Seleccione al menos un estado civil")),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Formulario enviado con éxito")),
+      );
+    }
   }
 
-  void modificar() {
-    // Aquí podrías cargar datos en los campos desde algún origen
-    print('Modificar (simulado)');
-  }
-
-  void grabar() {
-    // Simulación de guardado
-    print('Datos guardados');
+  @override
+  void dispose() {
+    _cedulaController.dispose();
+    _nombresController.dispose();
+    _apellidosController.dispose();
+    _edadController.dispose();
+    _fechaNacimientoController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 195, 117, 117),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const SizedBox(height: 30),
-          Center(
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: const DecorationImage(
-                  image: AssetImage("images/diddy.jpg"),
-                  fit: BoxFit.cover,
-                ),
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  )
+      appBar: AppBar(title: const Text('Formulario de Usuario')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildTextField(_cedulaController, 'Cédula', TextInputType.number),
+              _buildTextField(_nombresController, 'Nombres'),
+              _buildTextField(_apellidosController, 'Apellidos'),
+              _buildTextField(_edadController, 'Edad', TextInputType.number),
+
+              TextFormField(
+                controller: _fechaNacimientoController,
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Fecha de nacimiento'),
+                onTap: () => _seleccionarFecha(context),
+                validator: (value) => value == null || value.isEmpty ? 'Campo requerido' : null,
+              ),
+              const SizedBox(height: 16),
+
+              const Align(alignment: Alignment.centerLeft, child: Text('Género')),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Masculino'),
+                      value: 'Masculino',
+                      groupValue: _genero,
+                      onChanged: (value) => setState(() => _genero = value),
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Femenino'),
+                      value: 'Femenino',
+                      groupValue: _genero,
+                      onChanged: (value) => setState(() => _genero = value),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 30),
-          TextField(
-            controller: ciController,
-            decoration: const InputDecoration(labelText: 'Cédula'),
-          ),
-          TextField(
-            controller: nombreController,
-            decoration: const InputDecoration(labelText: 'Nombre'),
-          ),
-          TextField(
-            controller: apellidoController,
-            decoration: const InputDecoration(labelText: 'Apellido'),
-          ),
-          TextField(
-            controller: edadController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Edad'),
-          ),
-          const SizedBox(height: 20),
-          const Text('Género:', style: TextStyle(fontWeight: FontWeight.bold)),
-          Row(
-            children: [
-              Expanded(
-                child: RadioListTile(
-                  title: const Text('Masculino'),
-                  value: 'Masculino',
-                  groupValue: genero,
-                  onChanged: (value) {
-                    setState(() {
-                      genero = value!;
-                    });
-                  },
-                ),
+
+              const Align(alignment: Alignment.centerLeft, child: Text('Estado civil')),
+              Column(
+                children: estadoCivil.entries.map((entry) {
+                  return CheckboxListTile(
+                    title: Text(entry.key),
+                    value: entry.value,
+                    onChanged: (bool? newValue) {
+                      setState(() {
+                        estadoCivil[entry.key] = newValue ?? false;
+                      });
+                    },
+                  );
+                }).toList(),
               ),
-              Expanded(
-                child: RadioListTile(
-                  title: const Text('Femenino'),
-                  value: 'Femenino',
-                  groupValue: genero,
-                  onChanged: (value) {
-                    setState(() {
-                      genero = value!;
-                    });
-                  },
-                ),
+
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _validarYEnviar,
+                      child: const Text('Siguiente'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Salir'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const Text('Estado Civil:', style: TextStyle(fontWeight: FontWeight.bold)),
-          CheckboxListTile(
-            title: const Text('Soltero/a'),
-            value: esSoltero,
-            onChanged: (value) {
-              setState(() {
-                esSoltero = value!;
-              });
-            },
-          ),
-          CheckboxListTile(
-            title: const Text('Casado/a'),
-            value: esCasado,
-            onChanged: (value) {
-              setState(() {
-                esCasado = value!;
-              });
-            },
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ElevatedButton(
-                onPressed: agregar,
-                child: const Text('Agregar'),
-              ),
-              ElevatedButton(
-                onPressed: eliminar,
-                child: const Text('Eliminar'),
-              ),
-              ElevatedButton(
-                onPressed: modificar,
-                child: const Text('Modificar'),
-              ),
-              ElevatedButton(
-                onPressed: grabar,
-                child: const Text('Grabar'),
-              ),
-            ],
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      [TextInputType keyboardType = TextInputType.text]) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(labelText: label),
+        validator: (value) => value == null || value.isEmpty ? 'Campo requerido' : null,
       ),
     );
   }
